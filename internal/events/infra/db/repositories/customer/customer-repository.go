@@ -22,6 +22,10 @@ func (r *CustomerRepository) Add(customer *entity.Customer) error {
 	return r.db.Create(r.mapper.ToModel(customer)).Error
 }
 
+func (r *CustomerRepository) Update(event *entity.Customer) error {
+	return r.db.Updates(r.mapper.ToModel(event)).Error
+}
+
 func (r *CustomerRepository) FindById(id string) (*entity.Customer, error) {
 	var customer model.Customer
 	err := r.db.Where("id = ?", id).First(&customer).Error
