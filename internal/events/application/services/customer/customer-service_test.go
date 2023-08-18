@@ -19,7 +19,7 @@ func panicIfHasError(err error) {
 var test *tests.Tests
 var customerService CustomerService
 
-func init() {
+func Setup() {
 	test = tests.Setup()
 	test.UOW.Register("CustomerRepository", func(db *gorm.DB) interface{} {
 		repo := customer_repository.NewCustomerRepository(db)
@@ -32,6 +32,8 @@ func init() {
 }
 
 func TestShouldRegisterACustomer(t *testing.T) {
+	Setup()
+
 	err := customerService.Register(customer_dto.CustomerRegisterDto{
 		Name: "Jhon Doe",
 		CPF:  "45616278041",
@@ -48,6 +50,8 @@ func TestShouldRegisterACustomer(t *testing.T) {
 }
 
 func TestShouldUpdateACustomer(t *testing.T) {
+	Setup()
+
 	err := customerService.Register(customer_dto.CustomerRegisterDto{
 		Name: "Jhon Doe",
 		CPF:  "45616278041",
