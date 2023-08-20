@@ -120,3 +120,41 @@ func (s *Section) ChangeLocation(command SectionCommandChangeLocation) {
 	}
 	spot.ChangeLocation(command.Location)
 }
+
+func (s *Section) ChangeName(newName string) error {
+	err := validate(SectionCreateProps{
+		Id:                 s.Id.Value,
+		Name:               newName,
+		Description:        s.Description,
+		Date:               s.Date,
+		IsPublished:        s.IsPublished,
+		TotalSpots:         s.TotalSpots,
+		TotalSpotsReserved: s.TotalSpotsReserved,
+		Price:              s.Price,
+		Spots:              s.Spots,
+	})
+	if err != nil {
+		return err
+	}
+	s.Name = newName
+	return nil
+}
+
+func (s *Section) ChangeDescription(newDescription string) error {
+	err := validate(SectionCreateProps{
+		Id:                 s.Id.Value,
+		Name:               s.Name,
+		Description:        newDescription,
+		Date:               s.Date,
+		IsPublished:        s.IsPublished,
+		TotalSpots:         s.TotalSpots,
+		TotalSpotsReserved: s.TotalSpotsReserved,
+		Price:              s.Price,
+		Spots:              s.Spots,
+	})
+	if err != nil {
+		return err
+	}
+	s.Description = newDescription
+	return nil
+}
