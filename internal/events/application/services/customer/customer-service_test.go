@@ -10,12 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func panicIfHasError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 var test *tests.Tests
 var customerService CustomerService
 
