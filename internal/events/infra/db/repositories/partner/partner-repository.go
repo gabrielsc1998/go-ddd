@@ -19,17 +19,20 @@ func NewPartnerRepository(db *gorm.DB) *PartnerRepository {
 }
 
 func (r *PartnerRepository) Add(partner *entity.Partner) error {
+	partnerExists, _ := r.FindById(partner.Id.Value)
+	if partnerExists != nil {
+		return r.db.Updates(r.mapper.ToModel(partner)).Error
+	}
 	return r.db.Create(r.mapper.ToModel(partner)).Error
-}
-
-func (r *PartnerRepository) Update(event *entity.Partner) error {
-	return r.db.Updates(r.mapper.ToModel(event)).Error
 }
 
 func (r *PartnerRepository) FindById(id string) (*entity.Partner, error) {
 	var partner model.Partner
 	err := r.db.Where("id = ?", id).First(&partner).Error
-	return r.mapper.ToEntity(&partner), err
+	if err != nil {
+		return nil, err
+	}
+	return r.mapper.ToEntity(&partner), nil
 }
 
 func (r *PartnerRepository) FindAll() ([]*entity.Partner, error) {

@@ -6,17 +6,17 @@ import (
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	partner_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/partner"
 	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
-	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
+	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner-repository"
 )
 
 type PartnerService struct {
 	uow               *unit_of_work.Uow
-	partnerRepository *partner_repository.PartnerRepository
+	partnerRepository partner_repository.PartnerRepositoryInterface
 }
 
 type PartnerServiceProps struct {
 	UOW               *unit_of_work.Uow
-	PartnerRepository *partner_repository.PartnerRepository
+	PartnerRepository partner_repository.PartnerRepositoryInterface
 }
 
 func NewPartnerService(props PartnerServiceProps) PartnerService {
@@ -26,13 +26,13 @@ func NewPartnerService(props PartnerServiceProps) PartnerService {
 	}
 }
 
-func (s *PartnerService) getPartnerRepository() (*partner_repository.PartnerRepository, error) {
+func (s *PartnerService) getPartnerRepository() (partner_repository.PartnerRepositoryInterface, error) {
 	ctx := context.Background()
 	repo, err := s.uow.GetRepository(ctx, "PartnerRepository")
 	if err != nil {
 		return nil, err
 	}
-	partnerRepository := repo.(*partner_repository.PartnerRepository)
+	partnerRepository := repo.(partner_repository.PartnerRepositoryInterface)
 	return partnerRepository, nil
 }
 
@@ -65,7 +65,7 @@ func (s *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
 		partner.ChangeName(input.Name)
 	}
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = partnerRepository.Update(partner)
+		err = partnerRepository.Add(partner)
 		if err != nil {
 			return err
 		}
