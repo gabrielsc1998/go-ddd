@@ -22,6 +22,10 @@ func (r *PartnerRepository) Add(partner *entity.Partner) error {
 	return r.db.Create(r.mapper.ToModel(partner)).Error
 }
 
+func (r *PartnerRepository) Update(event *entity.Partner) error {
+	return r.db.Updates(r.mapper.ToModel(event)).Error
+}
+
 func (r *PartnerRepository) FindById(id string) (*entity.Partner, error) {
 	var partner model.Partner
 	err := r.db.Where("id = ?", id).First(&partner).Error
