@@ -1,4 +1,4 @@
-package event
+package event_repository
 
 import entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
 

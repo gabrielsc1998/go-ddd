@@ -19,10 +19,14 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 }
 
 func (r *EventRepository) Add(event *entity.Event) error {
+	eventExists, _ := r.FindById(event.Id.Value)
+	if eventExists != nil {
+		return r.update(event)
+	}
 	return r.db.Create(r.mapper.ToModel(event)).Error
 }
 
-func (r *EventRepository) Update(event *entity.Event) error {
+func (r *EventRepository) update(event *entity.Event) error {
 	return r.db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(r.mapper.ToModel(event)).Error
 }
 
@@ -34,7 +38,7 @@ func (r *EventRepository) FindById(id string) (*entity.Event, error) {
 
 func (r *EventRepository) FindAll() ([]*entity.Event, error) {
 	var events []model.Event
-	err := r.db.Find(&events).Error
+	err := r.db.Find(&events).Order("created_at ASC").Error
 	var eventsEntity []*entity.Event
 	for _, event := range events {
 		eventsEntity = append(eventsEntity, r.mapper.ToEntity(&event))

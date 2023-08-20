@@ -9,20 +9,20 @@ import (
 	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
 	section_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/section"
 	spot_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/spot"
-	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/event"
-	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
+	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/event"
+	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner-repository"
 )
 
 type EventService struct {
 	uow               *unit_of_work.Uow
-	eventRepository   *event_repository.EventRepository
-	partnerRepository *partner_repository.PartnerRepository
+	eventRepository   event_repository.EventRepositoryInterface
+	partnerRepository partner_repository.PartnerRepositoryInterface
 }
 
 type EventServiceProps struct {
 	UOW               *unit_of_work.Uow
-	EventRepository   *event_repository.EventRepository
-	PartnerRepository *partner_repository.PartnerRepository
+	EventRepository   event_repository.EventRepositoryInterface
+	PartnerRepository partner_repository.PartnerRepositoryInterface
 }
 
 func NewEventService(props EventServiceProps) EventService {
@@ -33,13 +33,13 @@ func NewEventService(props EventServiceProps) EventService {
 	}
 }
 
-func (s *EventService) getEventRepository() (*event_repository.EventRepository, error) {
+func (s *EventService) getEventRepository() (event_repository.EventRepositoryInterface, error) {
 	ctx := context.Background()
 	repo, err := s.uow.GetRepository(ctx, "EventRepository")
 	if err != nil {
 		return nil, err
 	}
-	eventRepository := repo.(*event_repository.EventRepository)
+	eventRepository := repo.(event_repository.EventRepositoryInterface)
 	return eventRepository, nil
 }
 
@@ -72,6 +72,7 @@ func (s *EventService) Update(input event_dto.EventUpdateDto) error {
 	if err != nil {
 		return err
 	}
+
 	event, err := eventRepository.FindById(input.Id)
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func (s *EventService) Update(input event_dto.EventUpdateDto) error {
 		event.ChangeDate(input.Date)
 	}
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Update(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return err
 		}
@@ -115,7 +116,7 @@ func (s *EventService) AddSection(input event_dto.EventAddSectionDto) error {
 		Price:              input.Price,
 	})
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Update(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return err
 		}
@@ -136,7 +137,7 @@ func (s *EventService) UpdateSectionInformation(input event_dto.EventUpdateSecti
 	})
 	eventRepository, err := s.getEventRepository()
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Update(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return err
 		}
@@ -186,7 +187,7 @@ func (s *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) er
 	})
 	eventRepository, err := s.getEventRepository()
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Update(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return err
 		}
@@ -203,7 +204,7 @@ func (s *EventService) PublishAll(eventId string) error {
 	event.PublishAll()
 	eventRepository, err := s.getEventRepository()
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Update(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return err
 		}
