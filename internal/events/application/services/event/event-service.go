@@ -6,6 +6,7 @@ import (
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
+	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
 	section_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/section"
 	spot_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/spot"
 	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/event"
@@ -43,16 +44,18 @@ func (s *EventService) getEventRepository() (*event_repository.EventRepository, 
 }
 
 func (s *EventService) Create(input event_dto.EventCreateDto) error {
-	event, _ := event_entity.Create(event_entity.EventCreateProps{
-		Id:                 "",
-		Name:               input.Name,
-		Description:        input.Description,
-		Date:               input.Date,
-		IsPublished:        input.IsPublished,
-		TotalSpots:         input.TotalSpots,
-		TotalSpotsReserved: input.TotalSpotsReserved,
-		PartnerId:          input.PartnerId,
+	partner, err := s.partnerRepository.FindById(input.PartnerId)
+	if err != nil {
+		return err
+	}
+	event, err := partner.InitEvent(partner_entity.PartnerInitEventCommand{
+		Name:        input.Name,
+		Description: input.Description,
+		Date:        input.Date,
 	})
+	if err != nil {
+		return err
+	}
 	eventRepository, err := s.getEventRepository()
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
@@ -119,6 +122,27 @@ func (s *EventService) AddSection(input event_dto.EventAddSectionDto) error {
 		return nil
 	})
 	return err
+}
+
+func (s *EventService) UpdateSectionInformation(input event_dto.EventUpdateSectionDto) error {
+	event, err := s.eventRepository.FindById(input.EventId)
+	if err != nil {
+		return err
+	}
+	event.UpdateSectionInformation(event_entity.EventCommandChangeSectionInfo{
+		SectionId:   input.SectionId,
+		Name:        input.Name,
+		Description: input.Description,
+	})
+	eventRepository, err := s.getEventRepository()
+	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+		err = eventRepository.Update(event)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return nil
 }
 
 func (s *EventService) FindEvents() ([]*event_entity.Event, error) {

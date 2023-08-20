@@ -32,6 +32,12 @@ type EventCreateProps struct {
 	PartnerId          string    `json:"partner_id"`
 }
 
+type EventCommandChangeSectionInfo struct {
+	SectionId   string `json:"section_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type EventCommandChangeLocation struct {
 	SectionId string `json:"section_id"`
 	SpotId    string `json:"spot_id"`
@@ -92,6 +98,23 @@ func (e *Event) AddSection(props section_entity.SectionCreateProps) (*section_en
 	e.Sections = append(e.Sections, *section)
 	e.TotalSpots += section.TotalSpots
 	return section, nil
+}
+
+func (e *Event) UpdateSectionInformation(command EventCommandChangeSectionInfo) error {
+	section := &section_entity.Section{}
+	for i := range e.Sections {
+		if e.Sections[i].Id.Value == command.SectionId {
+			section = &e.Sections[i]
+			break
+		}
+	}
+	if command.Name != "" && command.Name != section.Name {
+		section.ChangeName(command.Name)
+	}
+	if command.Description != "" && command.Description != section.Description {
+		section.ChangeDescription(command.Description)
+	}
+	return nil
 }
 
 func (e *Event) Publish() {
