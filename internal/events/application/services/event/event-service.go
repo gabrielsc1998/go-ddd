@@ -180,11 +180,14 @@ func (s *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) er
 	if err != nil {
 		return err
 	}
-	event.ChangeLocation(event_entity.EventCommandChangeLocation{
+	err = event.ChangeLocation(event_entity.EventCommandChangeLocation{
 		SectionId: input.SectionId,
 		SpotId:    input.SpotId,
 		Location:  input.Location,
 	})
+	if err != nil {
+		return err
+	}
 	eventRepository, err := s.getEventRepository()
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)

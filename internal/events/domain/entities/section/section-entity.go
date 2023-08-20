@@ -110,17 +110,6 @@ func (s *Section) PublishAll() {
 	}
 }
 
-func (s *Section) ChangeLocation(command SectionCommandChangeLocation) {
-	spot := &spot_entity.Spot{}
-	for i := range s.Spots {
-		if s.Spots[i].Id.Value == command.SpotId {
-			spot = &s.Spots[i]
-			break
-		}
-	}
-	spot.ChangeLocation(command.Location)
-}
-
 func (s *Section) ChangeName(newName string) error {
 	err := validate(SectionCreateProps{
 		Id:                 s.Id.Value,
@@ -157,4 +146,32 @@ func (s *Section) ChangeDescription(newDescription string) error {
 	}
 	s.Description = newDescription
 	return nil
+}
+
+func (s *Section) ChangeLocation(command SectionCommandChangeLocation) error {
+	spot, err := s.getSpot(command.SpotId)
+	if err != nil {
+		return err
+	}
+	spot.ChangeLocation(command.Location)
+	return nil
+}
+
+func (s *Section) ReserveSpot(spotId string) error {
+	spot, err := s.getSpot(spotId)
+	if err != nil {
+		return err
+	}
+	spot.Reserve()
+	s.TotalSpotsReserved++
+	return nil
+}
+
+func (s *Section) getSpot(spotId string) (*spot_entity.Spot, error) {
+	for i := range s.Spots {
+		if s.Spots[i].Id.Value == spotId {
+			return &s.Spots[i], nil
+		}
+	}
+	return nil, errors.New("spot not found")
 }

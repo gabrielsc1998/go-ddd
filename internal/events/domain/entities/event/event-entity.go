@@ -44,6 +44,11 @@ type EventCommandChangeLocation struct {
 	Location  string `json:"location"`
 }
 
+type EventCommandReserveSpot struct {
+	SectionId string `json:"section_id"`
+	SpotId    string `json:"spot_id"`
+}
+
 func Create(props EventCreateProps) (*Event, error) {
 	err := validate(props)
 	if err != nil {
@@ -141,16 +146,36 @@ func (e *Event) ChangeDate(date time.Time) {
 }
 
 func (e *Event) ChangeLocation(command EventCommandChangeLocation) error {
-	section := &section_entity.Section{}
-	for i := range e.Sections {
-		if e.Sections[i].Id.Value == command.SectionId {
-			section = &e.Sections[i]
-			break
-		}
+	section, err := e.getSection(command.SectionId)
+	if err != nil {
+		return err
 	}
 	section.ChangeLocation(section_entity.SectionCommandChangeLocation{
 		SpotId:   command.SpotId,
 		Location: command.Location,
 	})
 	return nil
+}
+
+func (e *Event) ReserveSpot(command EventCommandReserveSpot) error {
+	section, err := e.getSection(command.SectionId)
+	if err != nil {
+		return err
+	}
+	err = section.ReserveSpot(command.SpotId)
+	if err != nil {
+		return err
+	}
+	e.TotalSpotsReserved++
+	return nil
+}
+
+func (e *Event) getSection(sectionId string) (*section_entity.Section, error) {
+	for i := range e.Sections {
+		if e.Sections[i].Id.Value == sectionId {
+			return &e.Sections[i], nil
+
+		}
+	}
+	return nil, errors.New("section not found")
 }
