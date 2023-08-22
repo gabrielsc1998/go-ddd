@@ -31,6 +31,7 @@ func (mapper *SectionMapper) ToModel(entity *section_entity.Section) *section_mo
 		TotalSpots:         entity.TotalSpots,
 		TotalSpotsReserved: entity.TotalSpotsReserved,
 		Spots:              spots,
+		Price:              entity.Price,
 	}
 }
 
@@ -50,6 +51,7 @@ func (mapper *SectionMapper) ToEntity(model *section_model.Section) *section_ent
 		TotalSpots:         model.TotalSpots,
 		TotalSpotsReserved: model.TotalSpotsReserved,
 		Spots:              spots,
+		Price:              model.Price,
 	})
 
 	return section
