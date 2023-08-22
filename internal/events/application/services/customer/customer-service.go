@@ -66,7 +66,7 @@ func (s *CustomerService) Update(input customer_dto.CustomerUpdateDto) error {
 		customer.ChangeName(input.Name)
 	}
 	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = customerRepository.Update(customer)
+		err = customerRepository.Add(customer)
 		if err != nil {
 			return err
 		}

@@ -19,11 +19,11 @@ func NewCustomerRepository(db *gorm.DB) *CustomerRepository {
 }
 
 func (r *CustomerRepository) Add(customer *entity.Customer) error {
+	customerExists, _ := r.FindById(customer.Id.Value)
+	if customerExists != nil {
+		return r.db.Updates(r.mapper.ToModel(customer)).Error
+	}
 	return r.db.Create(r.mapper.ToModel(customer)).Error
-}
-
-func (r *CustomerRepository) Update(event *entity.Customer) error {
-	return r.db.Updates(r.mapper.ToModel(event)).Error
 }
 
 func (r *CustomerRepository) FindById(id string) (*entity.Customer, error) {
