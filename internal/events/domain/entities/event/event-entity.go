@@ -146,7 +146,7 @@ func (e *Event) ChangeDate(date time.Time) {
 }
 
 func (e *Event) ChangeLocation(command EventCommandChangeLocation) error {
-	section, err := e.getSection(command.SectionId)
+	section, err := e.GetSection(command.SectionId)
 	if err != nil {
 		return err
 	}
@@ -157,8 +157,19 @@ func (e *Event) ChangeLocation(command EventCommandChangeLocation) error {
 	return nil
 }
 
+func (e *Event) AllowReserveSpot(command EventCommandReserveSpot) bool {
+	if e.IsPublished == false {
+		return false
+	}
+	section, err := e.GetSection(command.SectionId)
+	if err != nil {
+		return false
+	}
+	return section.AllowReserveSpot(command.SpotId)
+}
+
 func (e *Event) ReserveSpot(command EventCommandReserveSpot) error {
-	section, err := e.getSection(command.SectionId)
+	section, err := e.GetSection(command.SectionId)
 	if err != nil {
 		return err
 	}
@@ -170,7 +181,7 @@ func (e *Event) ReserveSpot(command EventCommandReserveSpot) error {
 	return nil
 }
 
-func (e *Event) getSection(sectionId string) (*section_entity.Section, error) {
+func (e *Event) GetSection(sectionId string) (*section_entity.Section, error) {
 	for i := range e.Sections {
 		if e.Sections[i].Id.Value == sectionId {
 			return &e.Sections[i], nil

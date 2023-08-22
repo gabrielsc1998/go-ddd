@@ -157,6 +157,20 @@ func (s *Section) ChangeLocation(command SectionCommandChangeLocation) error {
 	return nil
 }
 
+func (s *Section) AllowReserveSpot(spotId string) bool {
+	if !s.IsPublished {
+		return false
+	}
+	spot, err := s.getSpot(spotId)
+	if err != nil {
+		return false
+	}
+	if spot.IsReserved || !spot.IsPublished {
+		return false
+	}
+	return true
+}
+
 func (s *Section) ReserveSpot(spotId string) error {
 	spot, err := s.getSpot(spotId)
 	if err != nil {
