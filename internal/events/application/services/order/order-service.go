@@ -53,6 +53,14 @@ func (o *OrderService) getOrderRepository() (order_repository.OrderRepositoryInt
 	return orderRepository, nil
 }
 
+func (o *OrderService) List() ([]*order_entity.Order, error) {
+	orders, err := o.orderRepository.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
 func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 	customer, err := o.getCustomer(input.CustomerId)
 	if err != nil {
@@ -73,11 +81,8 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		return errors.New("spot not available")
 	}
 
-	spotReservation, err := o.spotReservationRepository.FindById(input.SpotId)
-	if err != nil {
-		return err
-	}
-	if spotReservation != nil {
+	spotReservationExists, _ := o.spotReservationRepository.FindById(input.SpotId)
+	if spotReservationExists != nil {
 		return errors.New("spot already reserved")
 	}
 
@@ -91,6 +96,11 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		EventSpotId: input.SpotId,
 		Amount:      section.Price,
 	})
+	if order == nil {
+		return err
+	}
+
+	order.Pay()
 
 	errorInReservation := func() error {
 		order.Cancel()
@@ -101,9 +111,9 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		return errors.New("error in reservation")
 	}
 
-	o.uow.Do(o.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		order.Pay()
-		err = o.orderRepository.Add(order)
+	orderRepository, err := o.getOrderRepository()
+	return o.uow.Do(o.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+		err = orderRepository.Add(order)
 		if err != nil {
 			return errorInReservation()
 		}
@@ -132,8 +142,6 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		}
 		return nil
 	})
-
-	return nil
 }
 
 func (o *OrderService) getCustomer(customerId string) (*customer_entity.Customer, error) {
