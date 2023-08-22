@@ -6,7 +6,7 @@ import (
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	partner_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/partner"
 	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
-	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner-repository"
+	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner"
 )
 
 type PartnerService struct {

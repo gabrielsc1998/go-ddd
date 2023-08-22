@@ -10,7 +10,7 @@ import (
 	section_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/section"
 	spot_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/spot"
 	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/event"
-	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner-repository"
+	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/domain/repositories/partner"
 )
 
 type EventService struct {
