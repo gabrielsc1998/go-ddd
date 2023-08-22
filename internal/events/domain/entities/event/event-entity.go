@@ -158,7 +158,7 @@ func (e *Event) ChangeLocation(command EventCommandChangeLocation) error {
 }
 
 func (e *Event) AllowReserveSpot(command EventCommandReserveSpot) bool {
-	if e.IsPublished == false {
+	if !e.IsPublished {
 		return false
 	}
 	section, err := e.GetSection(command.SectionId)
