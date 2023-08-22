@@ -22,7 +22,8 @@ type SpotReservationCreateProps struct {
 }
 
 type SpotReservationCommandChangeReservation struct {
-	CustomerId string
+	CustomerId      string
+	ReservationDate time.Time
 }
 
 func Create(props SpotReservationCreateProps) (*SpotReservation, error) {
@@ -57,5 +58,5 @@ func validate(props SpotReservationCreateProps) error {
 
 func (order *SpotReservation) ChangeReservation(command SpotReservationCommandChangeReservation) {
 	order.CustomerId, _ = id.NewID(command.CustomerId)
-	order.ReservationDate = time.Now()
+	order.ReservationDate = command.ReservationDate
 }
