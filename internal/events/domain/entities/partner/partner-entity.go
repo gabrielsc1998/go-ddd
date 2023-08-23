@@ -7,10 +7,11 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/entity"
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/value-objects/id"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
+	partner_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner"
 )
 
 type Partner struct {
-	entity.Entity
+	entity.AggregateRoot
 	Name string `json:"name"`
 }
 
@@ -30,13 +31,15 @@ func Create(props PartnerCreateProps) (*Partner, error) {
 	if err != nil {
 		return nil, err
 	}
-	customerId, _ := id.NewID(props.Id)
-	return &Partner{
-		Entity: entity.Entity{
-			Id: customerId,
+	partnerId, _ := id.NewID(props.Id)
+	partner := &Partner{
+		AggregateRoot: entity.AggregateRoot{
+			Id: partnerId,
 		},
 		Name: props.Name,
-	}, nil
+	}
+	partner.registerEvent()
+	return partner, nil
 }
 
 func validate(props PartnerCreateProps) error {
@@ -48,6 +51,11 @@ func validate(props PartnerCreateProps) error {
 		return errors.New("invalid name")
 	}
 	return nil
+}
+
+func (c *Partner) registerEvent() {
+	partnerCreateEvent := partner_events.NewPartnerCreatedEvent(c.Id.Value)
+	c.AggregateRoot.AddEvent(partnerCreateEvent)
 }
 
 func (c *Partner) ChangeName(newName string) error {
