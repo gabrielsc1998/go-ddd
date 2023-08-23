@@ -70,3 +70,19 @@ func TestShouldUpdateAPartner(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "Jhon Doe 2", partner.Name)
 }
+
+func TestShouldListPartners(t *testing.T) {
+	Setup()
+
+	err := partnerService.Register(partner_dto.PartnerRegisterDto{
+		Name: "Jhon Doe",
+	})
+	assert.Nil(t, err)
+
+	partners, err := partnerService.List()
+	assert.Nil(t, err)
+
+	assert.Equal(t, 1, len(partners))
+	assert.NotNil(t, partners[0].Id.Value)
+	assert.Equal(t, "Jhon Doe", partners[0].Name)
+}

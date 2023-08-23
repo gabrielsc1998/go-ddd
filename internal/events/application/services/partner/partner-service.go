@@ -26,9 +26,9 @@ func NewPartnerService(props PartnerServiceProps) PartnerService {
 	}
 }
 
-func (s *PartnerService) getPartnerRepository() (partner_repository.PartnerRepositoryInterface, error) {
+func (p *PartnerService) getPartnerRepository() (partner_repository.PartnerRepositoryInterface, error) {
 	ctx := context.Background()
-	repo, err := s.uow.GetRepository(ctx, "PartnerRepository")
+	repo, err := p.uow.GetRepository(ctx, "PartnerRepository")
 	if err != nil {
 		return nil, err
 	}
@@ -36,13 +36,13 @@ func (s *PartnerService) getPartnerRepository() (partner_repository.PartnerRepos
 	return partnerRepository, nil
 }
 
-func (s *PartnerService) Register(input partner_dto.PartnerRegisterDto) error {
+func (p *PartnerService) Register(input partner_dto.PartnerRegisterDto) error {
 	partner, _ := partner_entity.Create(partner_entity.PartnerCreateProps{
 		Id:   "",
 		Name: input.Name,
 	})
-	partnerRepository, err := s.getPartnerRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	partnerRepository, err := p.getPartnerRepository()
+	err = p.uow.Do(p.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = partnerRepository.Add(partner)
 		if err != nil {
 			return err
@@ -52,8 +52,8 @@ func (s *PartnerService) Register(input partner_dto.PartnerRegisterDto) error {
 	return err
 }
 
-func (s *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
-	partnerRepository, err := s.getPartnerRepository()
+func (p *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
+	partnerRepository, err := p.getPartnerRepository()
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (s *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
 	if input.Name != "" {
 		partner.ChangeName(input.Name)
 	}
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	err = p.uow.Do(p.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = partnerRepository.Add(partner)
 		if err != nil {
 			return err
@@ -72,4 +72,16 @@ func (s *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
 		return nil
 	})
 	return err
+}
+
+func (p *PartnerService) List() ([]*partner_entity.Partner, error) {
+	partnerRepository, err := p.getPartnerRepository()
+	if err != nil {
+		return nil, err
+	}
+	partners, err := partnerRepository.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	return partners, nil
 }
