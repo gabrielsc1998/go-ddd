@@ -23,7 +23,7 @@ func Setup() *Tests {
 	db := database.NewDatabase()
 	err := db.ConnectMySQL(database.DatabaseMySQLOptions{
 		Host:     "localhost",
-		Port:     "3306",
+		Port:     "3307",
 		User:     "root",
 		Password: "root",
 		Database: "events",
