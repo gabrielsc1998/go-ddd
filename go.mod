@@ -3,6 +3,7 @@ module github.com/gabrielsc1998/go-ddd
 go 1.21
 
 require (
+	github.com/go-chi/chi/v5 v5.0.10
 	github.com/google/uuid v1.3.0
 	github.com/klassmann/cpfcnpj v0.0.0-20200907140233-a595c5fd8de1
 	github.com/stretchr/testify v1.8.4
