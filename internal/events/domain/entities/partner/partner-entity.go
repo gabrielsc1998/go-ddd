@@ -55,7 +55,7 @@ func validate(props PartnerCreateProps) error {
 
 func (c *Partner) registerEvent() {
 	partnerCreateEvent := partner_events.NewPartnerCreatedEvent(c.Id.Value)
-	c.AggregateRoot.AddEvent(partnerCreateEvent)
+	c.AggregateRoot.AddEvent(partnerCreateEvent.DomainEvent)
 }
 
 func (c *Partner) ChangeName(newName string) error {

@@ -13,6 +13,7 @@ type PartnerCreatedEvent struct {
 func NewPartnerCreatedEvent(aggregateId string) *PartnerCreatedEvent {
 	return &PartnerCreatedEvent{
 		DomainEvent: domain_event.DomainEvent{
+			Name:         "PartnerCreated",
 			AggregateId:  aggregateId,
 			OccuredOn:    time.Now(),
 			EventVersion: 1,

@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	partner_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,7 +45,8 @@ func TestShouldCreateAPartner(t *testing.T) {
 
 	domainEvents := partner.AggregateRoot.GetEvents()
 	assert.Len(t, domainEvents, 1)
-	assert.Equal(t, "fc50a094-edc0-400a-ac80-b728ebd0270d", domainEvents[0].(*partner_events.PartnerCreatedEvent).AggregateId)
+	assert.Equal(t, "PartnerCreated", domainEvents[0].Name)
+	assert.Equal(t, "fc50a094-edc0-400a-ac80-b728ebd0270d", domainEvents[0].AggregateId)
 }
 
 func TestShouldInitAnEvent(t *testing.T) {
