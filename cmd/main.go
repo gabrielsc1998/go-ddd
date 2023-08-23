@@ -3,20 +3,51 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	"github.com/gabrielsc1998/go-ddd/internal/database"
-	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
+	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
+	event_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/event"
+	partner_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/partner"
+	customer_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/customer"
 	event_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/event"
+	order_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/order"
 	partner_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/partner"
 	section_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/section"
 	spot_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/spot"
+	spot_reservation_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/spot-reservation"
+	customer_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/customer"
 	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/event"
+	order_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/order"
 	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
+	spot_reservation_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/spot-reservation"
+	webserver "github.com/gabrielsc1998/go-ddd/internal/server"
 	"gorm.io/gorm"
 )
+
+func registerRepositoriesInUOW(uow *unit_of_work.Uow) {
+	uow.Register("EventRepository", func(db *gorm.DB) interface{} {
+		repo := event_repository.NewEventRepository(db)
+		return repo
+	})
+	uow.Register("PartnerRepository", func(db *gorm.DB) interface{} {
+		repo := partner_repository.NewPartnerRepository(db)
+		return repo
+	})
+	uow.Register("CustomerRepository", func(db *gorm.DB) interface{} {
+		repo := customer_repository.NewCustomerRepository(db)
+		return repo
+	})
+	uow.Register("OrderRepository", func(db *gorm.DB) interface{} {
+		repo := order_repository.NewOrderRepository(db)
+		return repo
+	})
+	uow.Register("SpotReservationRepository", func(db *gorm.DB) interface{} {
+		repo := spot_reservation_repository.NewSpotReservationRepository(db)
+		return repo
+	})
+}
 
 func main() {
 	db := database.NewDatabase()
@@ -29,91 +60,39 @@ func main() {
 	})
 	panicIfHasError(err)
 	fmt.Println("Connected to MySQL")
-	err = db.DB.AutoMigrate(&event_model.Event{}, &section_model.Section{}, &spot_model.Spot{}, &partner_model.Partner{})
+	err = db.DB.AutoMigrate(
+		&event_model.Event{},
+		&section_model.Section{},
+		&spot_model.Spot{},
+		&partner_model.Partner{},
+		&customer_model.Customer{},
+		&spot_reservation_model.SpotReservation{},
+		&order_model.Order{},
+	)
 	panicIfHasError(err)
 
 	uow := unit_of_work.NewUow(context.Background(), db.DB)
-	uow.Register("EventRepository", func(db *gorm.DB) interface{} {
-		repo := event_repository.NewEventRepository(db)
-		return repo
-	})
-
-	panicIfHasError(err)
+	registerRepositoriesInUOW(uow)
 
 	eventService := event_service.NewEventService(event_service.EventServiceProps{
 		UOW:               uow,
 		EventRepository:   event_repository.NewEventRepository(db.DB),
 		PartnerRepository: partner_repository.NewPartnerRepository(db.DB),
 	})
+	eventController := event_controller.NewEventController(eventService)
 
-	err = eventService.Create(event_dto.EventCreateDto{
-		Name:               "Teste",
-		Description:        "Teste",
-		Date:               time.Now(),
-		IsPublished:        true,
-		TotalSpots:         0,
-		TotalSpotsReserved: 0,
-		PartnerId:          "ffd86f59-3d60-47aa-80ce-410474f954d3",
+	partnerService := partner_service.NewPartnerService(partner_service.PartnerServiceProps{
+		UOW:               uow,
+		PartnerRepository: partner_repository.NewPartnerRepository(db.DB),
 	})
-	panicIfHasError(err)
+	partnerController := partner_controller.NewPartnerController(partnerService)
 
-	// events, err := eventService.FindEvents()
-	// panicIfHasError(err)
-
-	// for _, event := range events {
-	// 	// fmt.Println(event.Id.Value)
-	// 	// fmt.Println(event.Name)
-	// 	// fmt.Println(event.Description)
-	// 	// fmt.Println(event.Date)
-	// 	// fmt.Println(event.IsPublished)
-	// 	// fmt.Println(event.TotalSpots)
-	// 	// fmt.Println(event.TotalSpotsReserved)
-	// 	// fmt.Println(event.PartnerId.Value)
-	// }
-
-	// eventService.AddSection(event_dto.EventAddSectionDto{
-	// 	EventId:            "b8f7c3ce-ab0d-456e-a3c3-f90de050ee29",
-	// 	Name:               "Teste",
-	// 	Description:        "Teste",
-	// 	Date:               time.Now(),
-	// 	IsPublished:        true,
-	// 	TotalSpots:         1,
-	// 	TotalSpotsReserved: 0,
-	// 	Price:              0,
-	// })
-
-	// eventService.PublishAll("b8f7c3ce-ab0d-456e-a3c3-f90de050ee29")
-
-	// spots, err := eventService.FindSpots(event_dto.EventFindSpotsDto{
-	// 	EventId:   "b8f7c3ce-ab0d-456e-a3c3-f90de050ee29",
-	// 	SectionId: "d10cfc62-8531-4ccc-a273-9721f4fed032",
-	// })
-	// panicIfHasError(err)
-	// for _, spot := range spots {
-	// 	fmt.Println("v", spot.Id.Value)
-	// 	fmt.Println("l", spot.Location)
-	// 	fmt.Println("r", spot.IsReserved)
-	// 	fmt.Println("p", spot.IsPublished)
-	// }
-
-	// err = eventService.UpdateLocation(event_dto.EventUpdateLocationDto{
-	// 	EventId:   "b8f7c3ce-ab0d-456e-a3c3-f90de050ee29",
-	// 	SectionId: "d10cfc62-8531-4ccc-a273-9721f4fed032",
-	// 	SpotId:    "d4e460fc-18e3-44e6-8c3d-3265848b94c0",
-	// 	Location:  "outra location",
-	// })
-	// panicIfHasError(err)
-
-	// section, _ := eventService.FindSections("b8f7c3ce-ab0d-456e-a3c3-f90de050ee29")
-	// fmt.Println("here", section[0].Spots[0].Id.Value)
-
-	eventService.Update(event_dto.EventUpdateDto{
-		Id:          "b8f7c3ce-ab0d-456e-a3c3-f90de050ee29",
-		Name:        "updated",
-		Description: "updated",
-	})
-	for {
-	}
+	webserver := webserver.NewWebServer("8080")
+	webserver.AddHandler("/events", "POST", eventController.CreateEvent)
+	webserver.AddHandler("/events", "GET", eventController.ListEvents)
+	webserver.AddHandler("/partners", "POST", partnerController.CreatePartner)
+	webserver.AddHandler("/partners", "GET", partnerController.ListPartners)
+	webserver.Start()
 }
 
 func panicIfHasError(err error) {
