@@ -3,6 +3,8 @@ package partner_service
 import (
 	"context"
 
+	application_service "github.com/gabrielsc1998/go-ddd/internal/common/application/application-service"
+	"github.com/gabrielsc1998/go-ddd/internal/common/domain/entity"
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	partner_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/partner"
 	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
@@ -10,19 +12,22 @@ import (
 )
 
 type PartnerService struct {
-	uow               *unit_of_work.Uow
-	partnerRepository partner_repository.PartnerRepositoryInterface
+	uow                *unit_of_work.Uow
+	partnerRepository  partner_repository.PartnerRepositoryInterface
+	applicationService application_service.ApplicationServiceInterface
 }
 
 type PartnerServiceProps struct {
-	UOW               *unit_of_work.Uow
-	PartnerRepository partner_repository.PartnerRepositoryInterface
+	UOW                *unit_of_work.Uow
+	PartnerRepository  partner_repository.PartnerRepositoryInterface
+	ApplicationService application_service.ApplicationServiceInterface
 }
 
 func NewPartnerService(props PartnerServiceProps) PartnerService {
 	return PartnerService{
-		uow:               props.UOW,
-		partnerRepository: props.PartnerRepository,
+		uow:                props.UOW,
+		partnerRepository:  props.PartnerRepository,
+		applicationService: props.ApplicationService,
 	}
 }
 
@@ -41,15 +46,19 @@ func (p *PartnerService) Register(input partner_dto.PartnerRegisterDto) error {
 		Id:   "",
 		Name: input.Name,
 	})
-	partnerRepository, err := p.getPartnerRepository()
-	err = p.uow.Do(p.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = partnerRepository.Add(partner)
-		if err != nil {
-			return err
-		}
+	aggregateRoots := make([]*entity.AggregateRoot, 0)
+	aggregateRoots = append(aggregateRoots, &partner.AggregateRoot)
+	return p.applicationService.Run(aggregateRoots, func() error {
+		partnerRepository, err := p.getPartnerRepository()
+		err = p.uow.Do(p.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+			err = partnerRepository.Add(partner)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		return nil
 	})
-	return err
 }
 
 func (p *PartnerService) Update(input partner_dto.PartnerUpdateDto) error {
