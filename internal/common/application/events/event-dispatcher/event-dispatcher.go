@@ -3,17 +3,19 @@ package event_dispatcher
 import (
 	"errors"
 	"sync"
-
-	domain_event "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event"
 )
 
+type GenericEvent interface {
+	GetName() string
+}
+
 type EventHandlerInterface interface {
-	Handle(event domain_event.DomainEvent, wg *sync.WaitGroup)
+	Handle(event interface{}, wg *sync.WaitGroup)
 }
 
 type EventDispatcherInterface interface {
 	Register(eventName string, handler EventHandlerInterface) error
-	Dispatch(event domain_event.DomainEvent) error
+	Dispatch(event interface{}) error
 	Remove(eventName string, handler EventHandlerInterface) error
 	Has(eventName string, handler EventHandlerInterface) bool
 	Clear()
@@ -31,8 +33,8 @@ func NewEventDispatcher() *EventDispatcher {
 	}
 }
 
-func (ev *EventDispatcher) Dispatch(event domain_event.DomainEvent) error {
-	if handlers, ok := ev.handlers[event.Name]; ok {
+func (ev *EventDispatcher) Dispatch(event interface{}) error {
+	if handlers, ok := ev.handlers[event.(GenericEvent).GetName()]; ok {
 		wg := &sync.WaitGroup{}
 		for _, handler := range handlers {
 			wg.Add(1)

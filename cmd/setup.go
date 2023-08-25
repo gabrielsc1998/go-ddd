@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	application_service "github.com/gabrielsc1998/go-ddd/internal/common/application/application-service"
-	event_dispatcher "github.com/gabrielsc1998/go-ddd/internal/common/application/events/event-dispatcher"
 	event_handler "github.com/gabrielsc1998/go-ddd/internal/common/application/events/event-handler"
 	domain_event "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event"
 	domain_event_manager "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event-manager"
@@ -13,6 +12,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/database"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
+	partner_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/integration-events"
 	customer_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/customer"
 	event_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/event"
 	order_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/order"
@@ -80,12 +80,17 @@ type ApplicationServices struct {
 }
 
 func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database) ApplicationServices {
-	eventDispatcher := event_dispatcher.NewEventDispatcher()
-	domainEventManager := domain_event_manager.NewDomainEventManager(eventDispatcher)
+	domainEventManager := domain_event_manager.NewDomainEventManager()
 	applicationService := application_service.NewApplicationService(domainEventManager)
 
-	domainEventManager.Register("PartnerCreated", event_handler.NewEventHandler(func(event domain_event.DomainEvent, wg *sync.WaitGroup) {
-		fmt.Println("PartnerCreated")
+	domainEventManager.RegisterForDomainEvent("PartnerCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
+		fmt.Println("PartnerCreated - domain")
+		wg.Done()
+	}))
+
+	domainEventManager.RegisterForIntegrationEvent("PartnerCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
+		partnerCreatedIntEvent := partner_int_events.NewPartnerCreatedEvent(event.(*domain_event.DomainEvent))
+		fmt.Println("PartnerCreated - integration", partnerCreatedIntEvent)
 		wg.Done()
 	}))
 

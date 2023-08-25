@@ -8,3 +8,7 @@ type DomainEvent struct {
 	OccuredOn    time.Time
 	EventVersion int
 }
+
+func (d *DomainEvent) GetName() string {
+	return d.Name
+}

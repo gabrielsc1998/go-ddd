@@ -6,24 +6,24 @@ import (
 )
 
 type AggregateRootInterface interface {
-	AddEvent(event domain_event.DomainEvent)
+	AddEvent(event *domain_event.DomainEvent)
 	ClearEvents()
-	GetEvents() []domain_event.DomainEvent
+	GetEvents() []*domain_event.DomainEvent
 }
 
 type AggregateRoot struct {
 	Id     *id.ID
-	events []domain_event.DomainEvent
+	events []*domain_event.DomainEvent
 }
 
-func (a *AggregateRoot) AddEvent(event domain_event.DomainEvent) {
+func (a *AggregateRoot) AddEvent(event *domain_event.DomainEvent) {
 	a.events = append(a.events, event)
 }
 
 func (a *AggregateRoot) ClearEvents() {
-	a.events = []domain_event.DomainEvent{}
+	a.events = []*domain_event.DomainEvent{}
 }
 
-func (a *AggregateRoot) GetEvents() []domain_event.DomainEvent {
+func (a *AggregateRoot) GetEvents() []*domain_event.DomainEvent {
 	return a.events
 }

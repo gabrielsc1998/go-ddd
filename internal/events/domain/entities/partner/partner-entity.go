@@ -7,7 +7,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/entity"
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/value-objects/id"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
-	partner_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner"
+	partner_domain_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/domain-events"
 )
 
 type Partner struct {
@@ -54,8 +54,8 @@ func validate(props PartnerCreateProps) error {
 }
 
 func (c *Partner) registerEvent() {
-	partnerCreateEvent := partner_events.NewPartnerCreatedEvent(c.Id.Value)
-	c.AggregateRoot.AddEvent(partnerCreateEvent.DomainEvent)
+	partnerCreateEvent := partner_domain_events.NewPartnerCreatedDomainEvent(c.Id.Value)
+	c.AggregateRoot.AddEvent(&partnerCreateEvent.DomainEvent)
 }
 
 func (c *Partner) ChangeName(newName string) error {

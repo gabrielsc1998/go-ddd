@@ -1,4 +1,4 @@
-package partner_events
+package partner_domain_events
 
 import (
 	"time"
@@ -6,12 +6,12 @@ import (
 	domain_event "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event"
 )
 
-type PartnerCreatedEvent struct {
+type PartnerCreatedDomainEvent struct {
 	domain_event.DomainEvent
 }
 
-func NewPartnerCreatedEvent(aggregateId string) *PartnerCreatedEvent {
-	return &PartnerCreatedEvent{
+func NewPartnerCreatedDomainEvent(aggregateId string) *PartnerCreatedDomainEvent {
+	return &PartnerCreatedDomainEvent{
 		DomainEvent: domain_event.DomainEvent{
 			Name:         "PartnerCreated",
 			AggregateId:  aggregateId,

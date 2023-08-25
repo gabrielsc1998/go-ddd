@@ -34,7 +34,8 @@ func (a *ApplicationService) Run(aggregateRoots []*entity.AggregateRoot, callbac
 		return err
 	}
 	for _, aggregateRoot := range aggregateRoots {
-		a.domainEventManager.Publish(aggregateRoot)
+		a.domainEventManager.PublishForDomainEvent(aggregateRoot)
+		a.domainEventManager.PublishForIntegrationEvent(aggregateRoot)
 	}
 	return nil
 }
