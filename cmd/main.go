@@ -4,7 +4,6 @@ import (
 	"context"
 
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
-	"github.com/gabrielsc1998/go-ddd/internal/common/infra/outbox"
 	event_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/event"
 	partner_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/partner"
 	webserver "github.com/gabrielsc1998/go-ddd/internal/server"
@@ -29,14 +28,6 @@ func main() {
 	webserver.AddHandler("/partners", "POST", partnerController.CreatePartner)
 	webserver.AddHandler("/partners", "GET", partnerController.ListPartners)
 
-	ob := outbox.NewOutbox(db.DB, func(outboxData *[]outbox.OutboxModel) error {
-		// fmt.Println("Handling outbox", outboxData)
-		return nil
-	})
-
-	err = ob.Add(outbox.DtoAddInOutbox{
-		Payload: []byte("teste"),
-	})
 	panicIfHasError(err)
 
 	webserver.Start()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -9,6 +10,8 @@ import (
 	domain_event "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event"
 	domain_event_manager "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event-manager"
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
+	"github.com/gabrielsc1998/go-ddd/internal/common/infra/outbox"
+	"github.com/gabrielsc1998/go-ddd/internal/common/infra/rabbitmq"
 	"github.com/gabrielsc1998/go-ddd/internal/database"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
@@ -25,6 +28,7 @@ import (
 	order_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/order"
 	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
 	spot_reservation_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/spot-reservation"
+	"github.com/streadway/amqp"
 	"gorm.io/gorm"
 )
 
@@ -79,7 +83,46 @@ type ApplicationServices struct {
 	PartnerService partner_service.PartnerService
 }
 
+func Consumer(rmq *rabbitmq.RabbitMQ) {
+	msgs, _ := rmq.Channel.Consume("partner-created-queue", "", false, false, false, false, nil)
+	for msg := range msgs {
+		msg.Ack(false)
+		fmt.Printf("Consumer created_order received: %s", string(msg.Body))
+	}
+}
+
 func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database) ApplicationServices {
+	rmq := rabbitmq.NewRabbitMQ()
+	err := rmq.Connect(rabbitmq.RabbitMQOptions{
+		User:     "guest",
+		Password: "guest",
+		Host:     "localhost",
+		Port:     "5672",
+	})
+	panicIfHasError(err)
+	fmt.Println("Connected to RabbitMQ")
+
+	rmq.Channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
+	rmq.Channel.QueueDeclare("partner-created-queue", true, false, false, false, nil)
+	rmq.Channel.QueueBind("partner-created-queue", "partner.created", "events", false, nil)
+
+	go Consumer(rmq)
+
+	ob := outbox.NewOutbox(db.DB, func(outboxData *[]outbox.OutboxModel, ob *outbox.Outbox) error {
+		// fmt.Println("Handling outbox", (*outboxData)[0].Data)
+		// event := partner_int_events.PartnerCreatedIntegrationEvent{}
+		// err := json.Unmarshal((*outboxData)[0].Data, &event)
+		if outboxData == nil || len(*outboxData) == 0 {
+			return nil
+		}
+		rmq.Channel.Publish("events", "partner.created", false, false, amqp.Publishing{
+			ContentType: "application/json",
+			Body:        (*outboxData)[0].Data,
+		})
+		ob.MarkAsProcessed((*outboxData)[0].Id)
+		return nil
+	})
+
 	domainEventManager := domain_event_manager.NewDomainEventManager()
 	applicationService := application_service.NewApplicationService(domainEventManager)
 
@@ -91,6 +134,12 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database) Appli
 	domainEventManager.RegisterForIntegrationEvent("PartnerCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
 		partnerCreatedIntEvent := partner_int_events.NewPartnerCreatedEvent(event.(*domain_event.DomainEvent))
 		fmt.Println("PartnerCreated - integration", partnerCreatedIntEvent)
+		payload, err := json.Marshal(partnerCreatedIntEvent)
+		panicIfHasError(err)
+		err = ob.Add(outbox.DtoAddInOutbox{
+			Payload: payload,
+		})
+		panicIfHasError(err)
 		wg.Done()
 	}))
 
