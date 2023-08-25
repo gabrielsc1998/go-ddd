@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-co-op/gocron v1.32.1
 	github.com/google/uuid v1.3.0
 	github.com/klassmann/cpfcnpj v0.0.0-20200907140233-a595c5fd8de1
 	github.com/stretchr/testify v1.8.4
@@ -17,5 +18,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
