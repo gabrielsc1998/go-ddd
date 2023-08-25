@@ -1,4 +1,4 @@
-package main
+package setup
 
 import (
 	"encoding/json"
@@ -28,9 +28,14 @@ import (
 	order_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/order"
 	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
 	spot_reservation_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/spot-reservation"
-	"github.com/streadway/amqp"
 	"gorm.io/gorm"
 )
+
+func panicIfHasError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
 func SetupDatabase() (*database.Database, error) {
 	db := database.NewDatabase()
@@ -83,15 +88,7 @@ type ApplicationServices struct {
 	PartnerService partner_service.PartnerService
 }
 
-func Consumer(rmq *rabbitmq.RabbitMQ) {
-	msgs, _ := rmq.Channel.Consume("partner-created-queue", "", false, false, false, false, nil)
-	for msg := range msgs {
-		msg.Ack(false)
-		fmt.Printf("Consumer created_order received: %s", string(msg.Body))
-	}
-}
-
-func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database) ApplicationServices {
+func SetupRabbitMq() *rabbitmq.RabbitMQ {
 	rmq := rabbitmq.NewRabbitMQ()
 	err := rmq.Connect(rabbitmq.RabbitMQOptions{
 		User:     "guest",
@@ -100,29 +97,17 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database) Appli
 		Port:     "5672",
 	})
 	panicIfHasError(err)
-	fmt.Println("Connected to RabbitMQ")
-
 	rmq.Channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
 	rmq.Channel.QueueDeclare("partner-created-queue", true, false, false, false, nil)
 	rmq.Channel.QueueBind("partner-created-queue", "partner.created", "events", false, nil)
+	return rmq
+}
 
-	go Consumer(rmq)
+func SetupTransactionalOutbox(db *database.Database, handle func(outboxData *[]outbox.OutboxModel, ob *outbox.Outbox) error) *outbox.Outbox {
+	return outbox.NewOutbox(db.DB, handle)
+}
 
-	ob := outbox.NewOutbox(db.DB, func(outboxData *[]outbox.OutboxModel, ob *outbox.Outbox) error {
-		// fmt.Println("Handling outbox", (*outboxData)[0].Data)
-		// event := partner_int_events.PartnerCreatedIntegrationEvent{}
-		// err := json.Unmarshal((*outboxData)[0].Data, &event)
-		if outboxData == nil || len(*outboxData) == 0 {
-			return nil
-		}
-		rmq.Channel.Publish("events", "partner.created", false, false, amqp.Publishing{
-			ContentType: "application/json",
-			Body:        (*outboxData)[0].Data,
-		})
-		ob.MarkAsProcessed((*outboxData)[0].Id)
-		return nil
-	})
-
+func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database, ob *outbox.Outbox) ApplicationServices {
 	domainEventManager := domain_event_manager.NewDomainEventManager()
 	applicationService := application_service.NewApplicationService(domainEventManager)
 
