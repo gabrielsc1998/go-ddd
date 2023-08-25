@@ -8,14 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewOutbox(db *gorm.DB, handle func(*[]OutboxModel) error) *Outbox {
+func NewOutbox(db *gorm.DB, handle func(*[]OutboxModel, *Outbox) error) *Outbox {
 	db.AutoMigrate(&OutboxModel{})
 	outbox := &Outbox{
 		db: db,
 	}
 	cronJob := cronjob.NewCronJob(5, func() {
 		outboxes, _ := outbox.GetUnprocessedOutbox()
-		handle(outboxes)
+		handle(outboxes, outbox)
 	})
 	cronJob.Start()
 	return outbox
