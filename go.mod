@@ -7,6 +7,7 @@ require (
 	github.com/go-co-op/gocron v1.32.1
 	github.com/google/uuid v1.3.0
 	github.com/klassmann/cpfcnpj v0.0.0-20200907140233-a595c5fd8de1
+	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.8.4
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.3
