@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/gabrielsc1998/go-ddd/cmd/setup"
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
@@ -22,7 +23,22 @@ func main() {
 		if outboxData == nil || len(*outboxData) == 0 {
 			return nil
 		}
-		rabbitmq.Channel.Publish("events", "partner.created", false, false, amqp.Publishing{
+		type Event struct {
+			Name string `json:"name"`
+		}
+		currentEvent := Event{}
+		err := json.Unmarshal([]byte((*outboxData)[0].Data), &currentEvent)
+		if err != nil {
+			return err
+		}
+
+		key := ""
+		if currentEvent.Name == "PartnerCreatedInt" {
+			key = "partner.created"
+		} else if currentEvent.Name == "EventCreatedInt" {
+			key = "event.created"
+		}
+		rabbitmq.Channel.Publish("events", key, false, false, amqp.Publishing{
 			ContentType: "application/json",
 			Body:        (*outboxData)[0].Data,
 		})

@@ -7,16 +7,19 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/common/infra/rabbitmq"
 )
 
-func Consumer(rabbitmq *rabbitmq.RabbitMQ) {
-	msgs, _ := rabbitmq.Channel.Consume("partner-created-queue", "", false, false, false, false, nil)
+func Consumer(rabbitmq *rabbitmq.RabbitMQ, queue string) {
+	msgs, _ := rabbitmq.Channel.Consume(queue, "", false, false, false, false, nil)
 	for msg := range msgs {
 		msg.Ack(false)
-		fmt.Printf("Consumer partner-created received: %s", string(msg.Body))
+		fmt.Printf("Consumer %s received: %s \n\n", queue, string(msg.Body))
 	}
 }
 
 func main() {
 	rabbitmq := setup.SetupRabbitMq()
 	fmt.Println("Connected to RabbitMQ")
-	Consumer(rabbitmq)
+	go Consumer(rabbitmq, "event-created-queue")
+	go Consumer(rabbitmq, "partner-created-queue")
+	for {
+	}
 }

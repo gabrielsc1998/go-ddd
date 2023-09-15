@@ -104,6 +104,8 @@ func SetupRabbitMq() *rabbitmq.RabbitMQ {
 	rmq.Channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
 	rmq.Channel.QueueDeclare("partner-created-queue", true, false, false, false, nil)
 	rmq.Channel.QueueBind("partner-created-queue", "partner.created", "events", false, nil)
+	rmq.Channel.QueueDeclare("event-created-queue", true, false, false, false, nil)
+	rmq.Channel.QueueBind("event-created-queue", "event.created", "events", false, nil)
 	return rmq
 }
 
@@ -138,9 +140,9 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database, ob *o
 	}))
 
 	domainEventManager.RegisterForIntegrationEvent("EventCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
-		partnerCreatedIntEvent := event_int_events.NewEventCreatedEvent(event.(*domain_event.DomainEvent))
-		fmt.Println("EventCreated - integration", partnerCreatedIntEvent)
-		payload, err := json.Marshal(partnerCreatedIntEvent)
+		eventCreatedIntEvent := event_int_events.NewEventCreatedEvent(event.(*domain_event.DomainEvent))
+		fmt.Println("EventCreated - integration", eventCreatedIntEvent)
+		payload, err := json.Marshal(eventCreatedIntEvent)
 		panicIfHasError(err)
 		err = ob.Add(outbox.DtoAddInOutbox{
 			Payload: payload,
