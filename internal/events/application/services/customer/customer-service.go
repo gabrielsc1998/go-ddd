@@ -26,9 +26,9 @@ func NewCustomerService(props CustomerServiceProps) CustomerService {
 	}
 }
 
-func (s *CustomerService) getCustomerRepository() (*customer_repository.CustomerRepository, error) {
+func (c *CustomerService) getCustomerRepository() (*customer_repository.CustomerRepository, error) {
 	ctx := context.Background()
-	repo, err := s.uow.GetRepository(ctx, "CustomerRepository")
+	repo, err := c.uow.GetRepository(ctx, "CustomerRepository")
 	if err != nil {
 		return nil, err
 	}
@@ -36,14 +36,14 @@ func (s *CustomerService) getCustomerRepository() (*customer_repository.Customer
 	return customerRepository, nil
 }
 
-func (s *CustomerService) Register(input customer_dto.CustomerRegisterDto) error {
+func (c *CustomerService) Register(input customer_dto.CustomerRegisterDto) error {
 	customer, _ := customer_entity.Create(customer_entity.CustomerCreateProps{
 		Id:   "",
 		Name: input.Name,
 		CPF:  input.CPF,
 	})
-	customerRepository, err := s.getCustomerRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	customerRepository, err := c.getCustomerRepository()
+	err = c.uow.Do(c.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = customerRepository.Add(customer)
 		if err != nil {
 			return err
@@ -53,8 +53,8 @@ func (s *CustomerService) Register(input customer_dto.CustomerRegisterDto) error
 	return err
 }
 
-func (s *CustomerService) Update(input customer_dto.CustomerUpdateDto) error {
-	customerRepository, err := s.getCustomerRepository()
+func (c *CustomerService) Update(input customer_dto.CustomerUpdateDto) error {
+	customerRepository, err := c.getCustomerRepository()
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (s *CustomerService) Update(input customer_dto.CustomerUpdateDto) error {
 	if input.Name != "" {
 		customer.ChangeName(input.Name)
 	}
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	err = c.uow.Do(c.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = customerRepository.Add(customer)
 		if err != nil {
 			return err
@@ -73,4 +73,12 @@ func (s *CustomerService) Update(input customer_dto.CustomerUpdateDto) error {
 		return nil
 	})
 	return err
+}
+
+func (c *CustomerService) FindCustomers() ([]*customer_entity.Customer, error) {
+	customers, err := c.customerRepository.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	return customers, nil
 }

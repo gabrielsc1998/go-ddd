@@ -13,6 +13,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/common/infra/outbox"
 	"github.com/gabrielsc1998/go-ddd/internal/common/infra/rabbitmq"
 	"github.com/gabrielsc1998/go-ddd/internal/database"
+	customer_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/customer"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
 	partner_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/integration-events"
@@ -84,8 +85,9 @@ func RegisterRepositoriesInUOW(uow *unit_of_work.Uow) {
 }
 
 type ApplicationServices struct {
-	EventService   event_service.EventService
-	PartnerService partner_service.PartnerService
+	EventService    event_service.EventService
+	PartnerService  partner_service.PartnerService
+	CustomerService customer_service.CustomerService
 }
 
 func SetupRabbitMq() *rabbitmq.RabbitMQ {
@@ -97,6 +99,7 @@ func SetupRabbitMq() *rabbitmq.RabbitMQ {
 		Port:     "5672",
 	})
 	panicIfHasError(err)
+	fmt.Println("Connected to RabbitMQ")
 	rmq.Channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
 	rmq.Channel.QueueDeclare("partner-created-queue", true, false, false, false, nil)
 	rmq.Channel.QueueBind("partner-created-queue", "partner.created", "events", false, nil)
@@ -139,8 +142,15 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database, ob *o
 		PartnerRepository:  partnerRepository,
 		ApplicationService: applicationService,
 	})
+	customerService := customer_service.NewCustomerService(customer_service.CustomerServiceProps{
+		UOW:                uow,
+		CustomerRepository: customer_repository.NewCustomerRepository(db.DB),
+		// ApplicationService: applicationService,
+	})
+
 	return ApplicationServices{
-		EventService:   eventService,
-		PartnerService: partnerService,
+		EventService:    eventService,
+		PartnerService:  partnerService,
+		CustomerService: customerService,
 	}
 }

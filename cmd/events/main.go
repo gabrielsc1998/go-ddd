@@ -6,6 +6,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/cmd/setup"
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	"github.com/gabrielsc1998/go-ddd/internal/common/infra/outbox"
+	customer_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/customer"
 	event_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/event"
 	partner_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/partner"
 	webserver "github.com/gabrielsc1998/go-ddd/internal/server"
@@ -43,6 +44,11 @@ func main() {
 	partnerController := partner_controller.NewPartnerController(services.PartnerService)
 	webserver.AddHandler("/partners", "POST", partnerController.CreatePartner)
 	webserver.AddHandler("/partners", "GET", partnerController.ListPartners)
+
+	customerController := customer_controller.NewCustomerController(services.CustomerService)
+	webserver.AddHandler("/customers", "POST", customerController.RegisterCustomer)
+	webserver.AddHandler("/customers", "PUT", customerController.UpdateCustomer)
+	webserver.AddHandler("/customers", "GET", customerController.FindCustomers)
 
 	panicIfHasError(err)
 
