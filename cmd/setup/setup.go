@@ -16,6 +16,7 @@ import (
 	customer_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/customer"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
+	event_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/event/integration-events"
 	partner_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/integration-events"
 	customer_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/customer"
 	event_model "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/models/event"
@@ -131,11 +132,29 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database, ob *o
 		wg.Done()
 	}))
 
+	domainEventManager.RegisterForDomainEvent("EventCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
+		fmt.Println("EventCreated - domain")
+		wg.Done()
+	}))
+
+	domainEventManager.RegisterForIntegrationEvent("EventCreated", event_handler.NewEventHandler(func(event interface{}, wg *sync.WaitGroup) {
+		partnerCreatedIntEvent := event_int_events.NewEventCreatedEvent(event.(*domain_event.DomainEvent))
+		fmt.Println("EventCreated - integration", partnerCreatedIntEvent)
+		payload, err := json.Marshal(partnerCreatedIntEvent)
+		panicIfHasError(err)
+		err = ob.Add(outbox.DtoAddInOutbox{
+			Payload: payload,
+		})
+		panicIfHasError(err)
+		wg.Done()
+	}))
+
 	partnerRepository := partner_repository.NewPartnerRepository(db.DB)
 	eventService := event_service.NewEventService(event_service.EventServiceProps{
-		UOW:               uow,
-		EventRepository:   event_repository.NewEventRepository(db.DB),
-		PartnerRepository: partnerRepository,
+		UOW:                uow,
+		EventRepository:    event_repository.NewEventRepository(db.DB),
+		PartnerRepository:  partnerRepository,
+		ApplicationService: applicationService,
 	})
 	partnerService := partner_service.NewPartnerService(partner_service.PartnerServiceProps{
 		UOW:                uow,

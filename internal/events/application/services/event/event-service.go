@@ -3,6 +3,8 @@ package event_service
 import (
 	"context"
 
+	application_service "github.com/gabrielsc1998/go-ddd/internal/common/application/application-service"
+	"github.com/gabrielsc1998/go-ddd/internal/common/domain/entity"
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
 	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
@@ -14,28 +16,31 @@ import (
 )
 
 type EventService struct {
-	uow               *unit_of_work.Uow
-	eventRepository   event_repository.EventRepositoryInterface
-	partnerRepository partner_repository.PartnerRepositoryInterface
+	uow                *unit_of_work.Uow
+	eventRepository    event_repository.EventRepositoryInterface
+	partnerRepository  partner_repository.PartnerRepositoryInterface
+	applicationService application_service.ApplicationServiceInterface
 }
 
 type EventServiceProps struct {
-	UOW               *unit_of_work.Uow
-	EventRepository   event_repository.EventRepositoryInterface
-	PartnerRepository partner_repository.PartnerRepositoryInterface
+	UOW                *unit_of_work.Uow
+	EventRepository    event_repository.EventRepositoryInterface
+	PartnerRepository  partner_repository.PartnerRepositoryInterface
+	ApplicationService application_service.ApplicationServiceInterface
 }
 
 func NewEventService(props EventServiceProps) EventService {
 	return EventService{
-		uow:               props.UOW,
-		eventRepository:   props.EventRepository,
-		partnerRepository: props.PartnerRepository,
+		uow:                props.UOW,
+		eventRepository:    props.EventRepository,
+		partnerRepository:  props.PartnerRepository,
+		applicationService: props.ApplicationService,
 	}
 }
 
-func (s *EventService) getEventRepository() (event_repository.EventRepositoryInterface, error) {
+func (e *EventService) getEventRepository() (event_repository.EventRepositoryInterface, error) {
 	ctx := context.Background()
-	repo, err := s.uow.GetRepository(ctx, "EventRepository")
+	repo, err := e.uow.GetRepository(ctx, "EventRepository")
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +48,8 @@ func (s *EventService) getEventRepository() (event_repository.EventRepositoryInt
 	return eventRepository, nil
 }
 
-func (s *EventService) Create(input event_dto.EventCreateDto) error {
-	partner, err := s.partnerRepository.FindById(input.PartnerId)
+func (e *EventService) Create(input event_dto.EventCreateDto) error {
+	partner, err := e.partnerRepository.FindById(input.PartnerId)
 	if err != nil {
 		return err
 	}
@@ -56,19 +61,27 @@ func (s *EventService) Create(input event_dto.EventCreateDto) error {
 	if err != nil {
 		return err
 	}
-	eventRepository, err := s.getEventRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
-		err = eventRepository.Add(event)
+	aggregateRoots := make([]*entity.AggregateRoot, 0)
+	aggregateRoots = append(aggregateRoots, &event.AggregateRoot)
+
+	return e.applicationService.Run(aggregateRoots, func() error {
+		eventRepository, err := e.getEventRepository()
 		if err != nil {
 			return err
 		}
+		err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+			err = eventRepository.Add(event)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 		return nil
 	})
-	return err
 }
 
-func (s *EventService) Update(input event_dto.EventUpdateDto) error {
-	eventRepository, err := s.getEventRepository()
+func (e *EventService) Update(input event_dto.EventUpdateDto) error {
+	eventRepository, err := e.getEventRepository()
 	if err != nil {
 		return err
 	}
@@ -86,7 +99,7 @@ func (s *EventService) Update(input event_dto.EventUpdateDto) error {
 	if !input.Date.IsZero() {
 		event.ChangeDate(input.Date)
 	}
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
 		if err != nil {
 			return err
@@ -96,8 +109,8 @@ func (s *EventService) Update(input event_dto.EventUpdateDto) error {
 	return err
 }
 
-func (s *EventService) AddSection(input event_dto.EventAddSectionDto) error {
-	eventRepository, err := s.getEventRepository()
+func (e *EventService) AddSection(input event_dto.EventAddSectionDto) error {
+	eventRepository, err := e.getEventRepository()
 	if err != nil {
 		return err
 	}
@@ -115,7 +128,7 @@ func (s *EventService) AddSection(input event_dto.EventAddSectionDto) error {
 		TotalSpotsReserved: input.TotalSpotsReserved,
 		Price:              input.Price,
 	})
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
 		if err != nil {
 			return err
@@ -125,8 +138,8 @@ func (s *EventService) AddSection(input event_dto.EventAddSectionDto) error {
 	return err
 }
 
-func (s *EventService) UpdateSectionInformation(input event_dto.EventUpdateSectionDto) error {
-	event, err := s.eventRepository.FindById(input.EventId)
+func (e *EventService) UpdateSectionInformation(input event_dto.EventUpdateSectionDto) error {
+	event, err := e.eventRepository.FindById(input.EventId)
 	if err != nil {
 		return err
 	}
@@ -135,8 +148,8 @@ func (s *EventService) UpdateSectionInformation(input event_dto.EventUpdateSecti
 		Name:        input.Name,
 		Description: input.Description,
 	})
-	eventRepository, err := s.getEventRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	eventRepository, err := e.getEventRepository()
+	err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
 		if err != nil {
 			return err
@@ -146,24 +159,24 @@ func (s *EventService) UpdateSectionInformation(input event_dto.EventUpdateSecti
 	return nil
 }
 
-func (s *EventService) FindEvents() ([]*event_entity.Event, error) {
-	events, err := s.eventRepository.FindAll()
+func (e *EventService) FindEvents() ([]*event_entity.Event, error) {
+	events, err := e.eventRepository.FindAll()
 	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (s *EventService) FindSections(eventId string) ([]section_entity.Section, error) {
-	event, err := s.eventRepository.FindById(eventId)
+func (e *EventService) FindSections(eventId string) ([]section_entity.Section, error) {
+	event, err := e.eventRepository.FindById(eventId)
 	if err != nil {
 		return nil, err
 	}
 	return event.Sections, nil
 }
 
-func (s *EventService) FindSpots(input event_dto.EventFindSpotsDto) ([]spot_entity.Spot, error) {
-	event, err := s.eventRepository.FindById(input.EventId)
+func (e *EventService) FindSpots(input event_dto.EventFindSpotsDto) ([]spot_entity.Spot, error) {
+	event, err := e.eventRepository.FindById(input.EventId)
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +188,8 @@ func (s *EventService) FindSpots(input event_dto.EventFindSpotsDto) ([]spot_enti
 	return nil, nil
 }
 
-func (s *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) error {
-	event, err := s.eventRepository.FindById(input.EventId)
+func (e *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) error {
+	event, err := e.eventRepository.FindById(input.EventId)
 	if err != nil {
 		return err
 	}
@@ -188,8 +201,8 @@ func (s *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) er
 	if err != nil {
 		return err
 	}
-	eventRepository, err := s.getEventRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	eventRepository, err := e.getEventRepository()
+	err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
 		if err != nil {
 			return err
@@ -199,14 +212,14 @@ func (s *EventService) UpdateLocation(input event_dto.EventUpdateLocationDto) er
 	return nil
 }
 
-func (s *EventService) PublishAll(eventId string) error {
-	event, err := s.eventRepository.FindById(eventId)
+func (e *EventService) PublishAll(eventId string) error {
+	event, err := e.eventRepository.FindById(eventId)
 	if err != nil {
 		return err
 	}
 	event.PublishAll()
-	eventRepository, err := s.getEventRepository()
-	err = s.uow.Do(s.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+	eventRepository, err := e.getEventRepository()
+	err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = eventRepository.Add(event)
 		if err != nil {
 			return err

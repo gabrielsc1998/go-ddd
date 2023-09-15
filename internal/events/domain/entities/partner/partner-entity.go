@@ -7,6 +7,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/entity"
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/value-objects/id"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
+	event_domain_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/event/domain-events"
 	partner_domain_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/domain-events"
 )
 
@@ -78,6 +79,8 @@ func (c *Partner) InitEvent(command PartnerInitEventCommand) (*event_entity.Even
 		Date:        command.Date,
 		PartnerId:   c.Id.Value,
 	})
+	eventEventCreated := event_domain_events.NewEventCreatedDomainEvent(event.Id.Value)
+	event.AggregateRoot.AddEvent(&eventEventCreated.DomainEvent)
 	if err != nil {
 		return nil, err
 	}
