@@ -13,3 +13,8 @@ type AddSectionInputDto struct {
 	TotalSpots  int     `json:"total_spots"`
 	Price       float64 `json:"price"`
 }
+
+type UpdateSectionInputDto struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}

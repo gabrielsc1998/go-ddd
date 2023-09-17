@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gabrielsc1998/go-ddd/internal/common/domain/value-objects/id"
 	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	event_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/event"
@@ -56,8 +57,13 @@ func (e *EventController) ListEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *EventController) FindEventSections(w http.ResponseWriter, r *http.Request) {
-	eventId := chi.URLParam(r, "event_id")
-	eventSections, err := e.eventService.FindSections(eventId)
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	eventSections, err := e.eventService.FindSections(eventId.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -70,15 +76,20 @@ func (e *EventController) FindEventSections(w http.ResponseWriter, r *http.Reque
 }
 
 func (e *EventController) AddSection(w http.ResponseWriter, r *http.Request) {
-	eventId := chi.URLParam(r, "event_id")
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	var dto AddSectionInputDto
-	err := json.NewDecoder(r.Body).Decode(&dto)
+	err = json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = e.eventService.AddSection(event_dto.EventAddSectionDto{
-		EventId:            eventId,
+		EventId:            eventId.Value,
 		Name:               dto.Name,
 		Description:        dto.Description,
 		Date:               time.Now(),
@@ -86,6 +97,51 @@ func (e *EventController) AddSection(w http.ResponseWriter, r *http.Request) {
 		TotalSpots:         dto.TotalSpots,
 		TotalSpotsReserved: 0,
 		Price:              dto.Price,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func (e *EventController) PublishAll(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = e.eventService.PublishAll(eventId.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func (e *EventController) UpdateSection(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sectionIdParam := chi.URLParam(r, "section_id")
+	sectionId, err := id.NewID(sectionIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var dto UpdateSectionInputDto
+	err = json.NewDecoder(r.Body).Decode(&dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = e.eventService.UpdateSectionInformation(event_dto.EventUpdateSectionDto{
+		EventId:     eventId.Value,
+		SectionId:   sectionId.Value,
+		Name:        dto.Name,
+		Description: dto.Description,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
