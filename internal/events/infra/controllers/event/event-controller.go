@@ -10,6 +10,7 @@ import (
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
 	event_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/event"
 	section_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/section"
+	spot_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/spot"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -147,4 +148,32 @@ func (e *EventController) UpdateSection(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func (e *EventController) GetSectionSpots(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sectionIdParam := chi.URLParam(r, "section_id")
+	sectionId, err := id.NewID(sectionIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sectionSpots, err := e.eventService.FindSpots(event_dto.EventFindSpotsDto{
+		EventId:   eventId.Value,
+		SectionId: sectionId.Value,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sectionSpotsPresenter := make([]spot_presenter.SpotPresenter, len(sectionSpots))
+	for i, spot := range sectionSpots {
+		sectionSpotsPresenter[i] = spot_presenter.ToPresent(&spot)
+	}
+	json.NewEncoder(w).Encode(sectionSpotsPresenter)
 }

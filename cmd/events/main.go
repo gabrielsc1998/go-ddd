@@ -60,6 +60,7 @@ func main() {
 	webserver.AddHandler("/events/{event_id}/sections", "POST", eventController.AddSection)
 	webserver.AddHandler("/events/{event_id}/publish-all", "PUT", eventController.PublishAll)
 	webserver.AddHandler("/events/{event_id}/sections/{section_id}", "PUT", eventController.UpdateSection)
+	webserver.AddHandler("/events/{event_id}/sections/{section_id}/spots", "GET", eventController.GetSectionSpots)
 
 	partnerController := partner_controller.NewPartnerController(services.PartnerService)
 	webserver.AddHandler("/partners", "POST", partnerController.CreatePartner)
