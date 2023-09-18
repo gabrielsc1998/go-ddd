@@ -177,3 +177,40 @@ func (e *EventController) GetSectionSpots(w http.ResponseWriter, r *http.Request
 	}
 	json.NewEncoder(w).Encode(sectionSpotsPresenter)
 }
+
+func (e *EventController) UpdateLocation(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sectionIdParam := chi.URLParam(r, "section_id")
+	sectionId, err := id.NewID(sectionIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	spotIdParam := chi.URLParam(r, "spot_id")
+	spotId, err := id.NewID(spotIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var dto UpdateLocationInputDto
+	err = json.NewDecoder(r.Body).Decode(&dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = e.eventService.UpdateLocation(event_dto.EventUpdateLocationDto{
+		EventId:   eventId.Value,
+		SectionId: sectionId.Value,
+		SpotId:    spotId.Value,
+		Location:  dto.Location,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}

@@ -18,3 +18,7 @@ type UpdateSectionInputDto struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+type UpdateLocationInputDto struct {
+	Location string `json:"location"`
+}
