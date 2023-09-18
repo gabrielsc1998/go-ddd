@@ -11,7 +11,6 @@ import (
 	event_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/event"
 	partner_controller "github.com/gabrielsc1998/go-ddd/internal/events/infra/controllers/partner"
 	webserver "github.com/gabrielsc1998/go-ddd/internal/server"
-	"github.com/streadway/amqp"
 )
 
 func main() {
@@ -38,10 +37,7 @@ func main() {
 		} else if currentEvent.Name == "EventCreatedInt" {
 			key = "event.created"
 		}
-		rabbitmq.Channel.Publish("events", key, false, false, amqp.Publishing{
-			ContentType: "application/json",
-			Body:        (*outboxData)[0].Data,
-		})
+		rabbitmq.Publish("events", key, (*outboxData)[0].Data)
 		ob.MarkAsProcessed((*outboxData)[0].Id)
 		return nil
 	})
