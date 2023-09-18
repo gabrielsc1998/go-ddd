@@ -15,6 +15,7 @@ import (
 	"github.com/gabrielsc1998/go-ddd/internal/database"
 	customer_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/customer"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
+	order_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/order"
 	partner_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/partner"
 	event_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/event/integration-events"
 	partner_int_events "github.com/gabrielsc1998/go-ddd/internal/events/domain/events/partner/integration-events"
@@ -89,6 +90,7 @@ type ApplicationServices struct {
 	EventService    event_service.EventService
 	PartnerService  partner_service.PartnerService
 	CustomerService customer_service.CustomerService
+	OrderService    order_service.OrderService
 }
 
 func SetupRabbitMq() *rabbitmq.RabbitMQ {
@@ -168,10 +170,18 @@ func SetupApplicationService(uow *unit_of_work.Uow, db *database.Database, ob *o
 		CustomerRepository: customer_repository.NewCustomerRepository(db.DB),
 		// ApplicationService: applicationService,
 	})
+	orderService := order_service.NewOrderService(order_service.OrderServiceProps{
+		UOW:                       uow,
+		OrderRepository:           order_repository.NewOrderRepository(db.DB),
+		CustomerRepository:        customer_repository.NewCustomerRepository(db.DB),
+		EventRepository:           event_repository.NewEventRepository(db.DB),
+		SpotReservationRepository: spot_reservation_repository.NewSpotReservationRepository(db.DB),
+	})
 
 	return ApplicationServices{
 		EventService:    eventService,
 		PartnerService:  partnerService,
 		CustomerService: customerService,
+		OrderService:    orderService,
 	}
 }

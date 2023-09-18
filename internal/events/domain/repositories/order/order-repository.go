@@ -5,6 +5,6 @@ import entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/o
 type OrderRepositoryInterface interface {
 	Add(order *entity.Order) error
 	FindById(id string) (*entity.Order, error)
-	FindAll() ([]*entity.Order, error)
+	FindAll(eventId string) ([]*entity.Order, error)
 	Delete(order *entity.Order) error
 }

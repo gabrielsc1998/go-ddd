@@ -20,7 +20,7 @@ func (o *MockOrderRepo) FindById(id string) (*order_entity.Order, error) {
 	return nil, errors.New("")
 }
 
-func (o *MockOrderRepo) FindAll() ([]*order_entity.Order, error) {
+func (o *MockOrderRepo) FindAll(eventId string) ([]*order_entity.Order, error) {
 	return nil, errors.New("")
 }
 

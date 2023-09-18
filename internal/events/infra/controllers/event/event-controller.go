@@ -7,8 +7,11 @@ import (
 
 	"github.com/gabrielsc1998/go-ddd/internal/common/domain/value-objects/id"
 	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
+	order_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/order"
 	event_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/event"
+	order_service "github.com/gabrielsc1998/go-ddd/internal/events/application/services/order"
 	event_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/event"
+	order_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/order"
 	section_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/section"
 	spot_presenter "github.com/gabrielsc1998/go-ddd/internal/events/infra/presenter/spot"
 	"github.com/go-chi/chi/v5"
@@ -16,11 +19,13 @@ import (
 
 type EventController struct {
 	eventService event_service.EventService
+	orderService order_service.OrderService
 }
 
-func NewEventController(eventService event_service.EventService) *EventController {
+func NewEventController(eventService event_service.EventService, orderService order_service.OrderService) *EventController {
 	return &EventController{
 		eventService: eventService,
+		orderService: orderService,
 	}
 }
 
@@ -213,4 +218,49 @@ func (e *EventController) UpdateLocation(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func (e *EventController) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var dto CreateOrderInputDto
+	err = json.NewDecoder(r.Body).Decode(&dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = e.orderService.Create(order_dto.OrderCreateDto{
+		EventId:    eventId.Value,
+		CustomerId: dto.CustomerId,
+		SectionId:  dto.SectionId,
+		SpotId:     dto.SpotId,
+		CardToken:  dto.CardToken,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func (e *EventController) ListOrders(w http.ResponseWriter, r *http.Request) {
+	eventIdParam := chi.URLParam(r, "event_id")
+	eventId, err := id.NewID(eventIdParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	order, err := e.orderService.List(eventId.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	orderPresenter := make([]order_presenter.OrderPresenter, len(order))
+	for i, event := range order {
+		orderPresenter[i] = order_presenter.ToPresent(event)
+	}
+	json.NewEncoder(w).Encode(orderPresenter)
 }

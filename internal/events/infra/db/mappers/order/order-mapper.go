@@ -17,6 +17,7 @@ func (mapper *OrderMapper) ToModel(entity *order_entity.Order) *order_model.Orde
 		ID:          entity.Id.Value,
 		CustomerId:  entity.CustomerId.Value,
 		Amount:      entity.Amount,
+		EventId:     entity.EventId.Value,
 		EventSpotId: entity.EventSpotId.Value,
 		Status:      entity.Status,
 	}
@@ -27,6 +28,7 @@ func (mapper *OrderMapper) ToEntity(model *order_model.Order) *order_entity.Orde
 		Id:          model.ID,
 		CustomerId:  model.CustomerId,
 		Amount:      model.Amount,
+		EventId:     model.EventId,
 		EventSpotId: model.EventSpotId,
 		Status:      model.Status,
 	})

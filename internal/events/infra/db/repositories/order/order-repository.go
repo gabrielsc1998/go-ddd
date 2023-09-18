@@ -35,9 +35,9 @@ func (r *OrderRepository) FindById(id string) (*entity.Order, error) {
 	return r.mapper.ToEntity(&order), nil
 }
 
-func (r *OrderRepository) FindAll() ([]*entity.Order, error) {
+func (r *OrderRepository) FindAll(eventId string) ([]*entity.Order, error) {
 	var orders []*model.Order
-	err := r.db.Find(&orders).Error
+	err := r.db.Where("event_id = ?", eventId).Find(&orders).Error
 	var ordersEntity []*entity.Order
 	for _, order := range orders {
 		ordersEntity = append(ordersEntity, r.mapper.ToEntity(order))

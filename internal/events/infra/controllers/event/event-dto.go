@@ -22,3 +22,10 @@ type UpdateSectionInputDto struct {
 type UpdateLocationInputDto struct {
 	Location string `json:"location"`
 }
+
+type CreateOrderInputDto struct {
+	SectionId  string `json:"section_id"`
+	SpotId     string `json:"spot_id"`
+	CustomerId string `json:"customer_id"`
+	CardToken  string `json:"card_token"`
+}

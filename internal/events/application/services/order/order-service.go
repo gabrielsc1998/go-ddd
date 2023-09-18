@@ -3,6 +3,7 @@ package order_service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
@@ -53,8 +54,8 @@ func (o *OrderService) getOrderRepository() (order_repository.OrderRepositoryInt
 	return orderRepository, nil
 }
 
-func (o *OrderService) List() ([]*order_entity.Order, error) {
-	orders, err := o.orderRepository.FindAll()
+func (o *OrderService) List(eventId string) ([]*order_entity.Order, error) {
+	orders, err := o.orderRepository.FindAll(eventId)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +63,7 @@ func (o *OrderService) List() ([]*order_entity.Order, error) {
 }
 
 func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
+	fmt.Print(input)
 	customer, err := o.getCustomer(input.CustomerId)
 	if err != nil {
 		return err
@@ -93,6 +95,7 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 
 	order, err := order_entity.Create(order_entity.OrderCreateProps{
 		CustomerId:  customer.Id.Value,
+		EventId:     event.Id.Value,
 		EventSpotId: input.SpotId,
 		Amount:      section.Price,
 	})
@@ -145,6 +148,7 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 }
 
 func (o *OrderService) getCustomer(customerId string) (*customer_entity.Customer, error) {
+	fmt.Print(customerId)
 	customer, err := o.customerRepository.FindById(customerId)
 	if err != nil {
 		return nil, errors.New("customer not found")

@@ -19,6 +19,7 @@ type Order struct {
 	entity.AggregateRoot
 	CustomerId  *id.ID
 	Amount      float64
+	EventId     *id.ID
 	EventSpotId *id.ID
 	Status      int
 }
@@ -27,6 +28,7 @@ type OrderCreateProps struct {
 	Id          string
 	CustomerId  string
 	Amount      float64
+	EventId     string
 	EventSpotId string
 	Status      int
 }
@@ -38,6 +40,7 @@ func Create(props OrderCreateProps) (*Order, error) {
 	}
 	orderId, _ := id.NewID(props.Id)
 	customerId, _ := id.NewID(props.CustomerId)
+	eventId, _ := id.NewID(props.EventId)
 	eventSpotId, _ := id.NewID(props.EventSpotId)
 	status := OrderStatus.PENDING
 	if props.Status != OrderStatus.PENDING {
@@ -49,6 +52,7 @@ func Create(props OrderCreateProps) (*Order, error) {
 		},
 		CustomerId:  customerId,
 		Amount:      props.Amount,
+		EventId:     eventId,
 		EventSpotId: eventSpotId,
 		Status:      status,
 	}, nil
@@ -60,6 +64,10 @@ func validate(props OrderCreateProps) error {
 		return err
 	}
 	_, err = id.NewID(props.CustomerId)
+	if err != nil {
+		return err
+	}
+	_, err = id.NewID(props.EventId)
 	if err != nil {
 		return err
 	}

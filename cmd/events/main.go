@@ -49,7 +49,7 @@ func main() {
 
 	webserver := webserver.NewWebServer("8080")
 
-	eventController := event_controller.NewEventController(services.EventService)
+	eventController := event_controller.NewEventController(services.EventService, services.OrderService)
 	webserver.AddHandler("/events", "POST", eventController.CreateEvent)
 	webserver.AddHandler("/events", "GET", eventController.ListEvents)
 	webserver.AddHandler("/events/{event_id}/sections", "GET", eventController.FindEventSections)
@@ -58,6 +58,8 @@ func main() {
 	webserver.AddHandler("/events/{event_id}/sections/{section_id}", "PUT", eventController.UpdateSection)
 	webserver.AddHandler("/events/{event_id}/sections/{section_id}/spots", "GET", eventController.GetSectionSpots)
 	webserver.AddHandler("/events/{event_id}/sections/{section_id}/spots/{spot_id}", "PUT", eventController.UpdateLocation)
+	webserver.AddHandler("/events/{event_id}/orders", "POST", eventController.CreateOrder)
+	webserver.AddHandler("/events/{event_id}/orders", "GET", eventController.ListOrders)
 
 	partnerController := partner_controller.NewPartnerController(services.PartnerService)
 	webserver.AddHandler("/partners", "POST", partnerController.CreatePartner)
