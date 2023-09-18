@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	application_service "github.com/gabrielsc1998/go-ddd/internal/common/application/application-service"
+	domain_event_manager "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event-manager"
 	"github.com/gabrielsc1998/go-ddd/internal/common/tests"
 	event_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/event"
 	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
@@ -28,6 +30,9 @@ func Setup() {
 		UOW:               test.UOW,
 		EventRepository:   event_repository.NewEventRepository(test.DB.DB),
 		PartnerRepository: partnerRepository,
+		ApplicationService: application_service.NewApplicationService(
+			domain_event_manager.NewDomainEventManager(),
+		),
 	})
 }
 
@@ -132,6 +137,10 @@ func TestShouldGetAllEvents(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
+	events, err := eventService.FindEvents()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(events))
+
 	err = eventService.Create(event_dto.EventCreateDto{
 		Name:        "Event 02",
 		Description: "Event 02 description",
@@ -140,13 +149,16 @@ func TestShouldGetAllEvents(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	events, err := eventService.FindEvents()
+	events, err = eventService.FindEvents()
+
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(events))
+
 	assert.Equal(t, "Event 01", events[0].Name)
 	assert.Equal(t, partner.Id.Value, events[0].PartnerId.Value)
 	assert.Equal(t, "Event 01 description", events[0].Description)
 	assert.Equal(t, date.Format("2006-01-02 15:04:05:000"), events[0].Date.Format("2006-01-02 15:04:05:000"))
+
 	assert.Equal(t, "Event 02", events[1].Name)
 	assert.Equal(t, "Event 02 description", events[1].Description)
 	assert.Equal(t, date.Format("2006-01-02 15:04:05:000"), events[1].Date.Format("2006-01-02 15:04:05:000"))

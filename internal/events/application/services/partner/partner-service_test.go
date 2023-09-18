@@ -3,6 +3,8 @@ package partner_service
 import (
 	"testing"
 
+	application_service "github.com/gabrielsc1998/go-ddd/internal/common/application/application-service"
+	domain_event_manager "github.com/gabrielsc1998/go-ddd/internal/common/domain/domain-event-manager"
 	"github.com/gabrielsc1998/go-ddd/internal/common/tests"
 	partner_dto "github.com/gabrielsc1998/go-ddd/internal/events/application/dto/partner"
 	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
@@ -22,6 +24,9 @@ func Setup() {
 	partnerService = NewPartnerService(PartnerServiceProps{
 		UOW:               test.UOW,
 		PartnerRepository: partner_repository.NewPartnerRepository(test.DB.DB),
+		ApplicationService: application_service.NewApplicationService(
+			domain_event_manager.NewDomainEventManager(),
+		),
 	})
 }
 

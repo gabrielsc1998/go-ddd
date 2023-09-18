@@ -38,7 +38,7 @@ func (r *EventRepository) FindById(id string) (*entity.Event, error) {
 
 func (r *EventRepository) FindAll() ([]*entity.Event, error) {
 	var events []model.Event
-	err := r.db.Find(&events).Order("created_at ASC").Error
+	err := r.db.Find(&events).Order("created_at asc").Error
 	var eventsEntity []*entity.Event
 	for _, event := range events {
 		eventsEntity = append(eventsEntity, r.mapper.ToEntity(&event))
