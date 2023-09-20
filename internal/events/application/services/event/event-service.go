@@ -69,14 +69,13 @@ func (e *EventService) Create(input event_dto.EventCreateDto) error {
 		if err != nil {
 			return err
 		}
-		err = e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
+		return e.uow.Do(e.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 			err = eventRepository.Add(event)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
-		return nil
 	})
 }
 
