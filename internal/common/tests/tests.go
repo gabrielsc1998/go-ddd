@@ -41,6 +41,7 @@ func Setup() *Tests {
 	)
 	panicIfHasError(err)
 
+	db.DB.Exec("SET FOREIGN_KEY_CHECKS=0")
 	db.DB.Exec("DELETE FROM spots")
 	db.DB.Exec("DELETE FROM sections")
 	db.DB.Exec("DELETE FROM events")
@@ -48,6 +49,7 @@ func Setup() *Tests {
 	db.DB.Exec("DELETE FROM customers")
 	db.DB.Exec("DELETE FROM orders")
 	db.DB.Exec("DELETE FROM spot_reservations")
+	db.DB.Exec("SET FOREIGN_KEY_CHECKS=1")
 
 	uow := unit_of_work.NewUow(context.Background(), db.DB)
 	return &Tests{
