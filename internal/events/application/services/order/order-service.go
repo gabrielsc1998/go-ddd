@@ -3,7 +3,6 @@ package order_service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	unit_of_work "github.com/gabrielsc1998/go-ddd/internal/common/infra/db/unit-of-work"
@@ -44,7 +43,7 @@ func NewOrderService(props OrderServiceProps) OrderService {
 	}
 }
 
-func (o *OrderService) getOrderRepository() (order_repository.OrderRepositoryInterface, error) {
+func (o *OrderService) getOrderRepositoryFromUOW() (order_repository.OrderRepositoryInterface, error) {
 	ctx := context.Background()
 	repo, err := o.uow.GetRepository(ctx, "OrderRepository")
 	if err != nil {
@@ -52,6 +51,26 @@ func (o *OrderService) getOrderRepository() (order_repository.OrderRepositoryInt
 	}
 	orderRepository := repo.(order_repository.OrderRepositoryInterface)
 	return orderRepository, nil
+}
+
+func (o *OrderService) getSpotReservationRepositoryFromUOW() (spot_reservation_repository.SpotReservationRepositoryInterface, error) {
+	ctx := context.Background()
+	repo, err := o.uow.GetRepository(ctx, "SpotReservationRepository")
+	if err != nil {
+		return nil, err
+	}
+	spotReservationRepository := repo.(spot_reservation_repository.SpotReservationRepositoryInterface)
+	return spotReservationRepository, nil
+}
+
+func (o *OrderService) getEventRepositoryFromUOW() (event_repository.EventRepositoryInterface, error) {
+	ctx := context.Background()
+	repo, err := o.uow.GetRepository(ctx, "EventRepository")
+	if err != nil {
+		return nil, err
+	}
+	eventRepository := repo.(event_repository.EventRepositoryInterface)
+	return eventRepository, nil
 }
 
 func (o *OrderService) List(eventId string) ([]*order_entity.Order, error) {
@@ -63,7 +82,6 @@ func (o *OrderService) List(eventId string) ([]*order_entity.Order, error) {
 }
 
 func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
-	fmt.Print(input)
 	customer, err := o.getCustomer(input.CustomerId)
 	if err != nil {
 		return err
@@ -114,7 +132,9 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		return errors.New("error in reservation")
 	}
 
-	orderRepository, err := o.getOrderRepository()
+	orderRepository, _ := o.getOrderRepositoryFromUOW()
+	eventRepository, _ := o.getEventRepositoryFromUOW()
+	spotReservationRepository, _ := o.getSpotReservationRepositoryFromUOW()
 	return o.uow.Do(o.uow.GetCtx(), func(uow *unit_of_work.Uow) error {
 		err = orderRepository.Add(order)
 		if err != nil {
@@ -130,7 +150,8 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 		if err != nil {
 			return errorInReservation()
 		}
-		err = o.spotReservationRepository.Add(spotReservation)
+
+		err = spotReservationRepository.Add(spotReservation)
 		if err != nil {
 			return errorInReservation()
 		}
@@ -139,16 +160,16 @@ func (o *OrderService) Create(input order_dto.OrderCreateDto) error {
 			SectionId: input.SectionId,
 			SpotId:    input.SpotId,
 		})
-		err = o.eventRepository.Add(event)
+		err = eventRepository.Add(event)
 		if err != nil {
 			return errorInReservation()
 		}
+
 		return nil
 	})
 }
 
 func (o *OrderService) getCustomer(customerId string) (*customer_entity.Customer, error) {
-	fmt.Print(customerId)
 	customer, err := o.customerRepository.FindById(customerId)
 	if err != nil {
 		return nil, errors.New("customer not found")

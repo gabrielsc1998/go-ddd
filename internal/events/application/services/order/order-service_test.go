@@ -11,11 +11,13 @@ import (
 	customer_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/customer"
 	event_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/event"
 	order_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/order"
+	partner_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/partner"
 	section_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/section"
 	spot_entity "github.com/gabrielsc1998/go-ddd/internal/events/domain/entities/spot"
 	customer_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/customer"
 	event_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/event"
 	order_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/order"
+	partner_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/partner"
 	spot_reservation_repository "github.com/gabrielsc1998/go-ddd/internal/events/infra/db/repositories/spot-reservation"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -37,7 +39,16 @@ func Setup() {
 		repo := order_repository.NewOrderRepository(db)
 		return repo
 	})
+	test.UOW.Register("EventRepository", func(db *gorm.DB) interface{} {
+		repo := event_repository.NewEventRepository(db)
+		return repo
+	})
+	test.UOW.Register("SpotReservationRepository", func(db *gorm.DB) interface{} {
+		repo := spot_reservation_repository.NewSpotReservationRepository(db)
+		return repo
+	})
 	orderRepository = order_repository.NewOrderRepository(test.DB.DB)
+	partnerRepository := partner_repository.NewPartnerRepository(test.DB.DB)
 	customerRepository := customer_repository.NewCustomerRepository(test.DB.DB)
 	eventRepository := event_repository.NewEventRepository(test.DB.DB)
 	spotReservationRepository := spot_reservation_repository.NewSpotReservationRepository(test.DB.DB)
@@ -49,12 +60,19 @@ func Setup() {
 		SpotReservationRepository: spotReservationRepository,
 	})
 
+	createdPartner, _ := partner_entity.Create(partner_entity.PartnerCreateProps{
+		Id:   "",
+		Name: "Test Partner",
+	})
+	partnerRepository.Add(createdPartner)
+
 	createdEvent, _ := event_entity.Create(event_entity.EventCreateProps{
 		Id:          "",
 		Name:        "Test Event",
 		Description: "Test Event Description",
 		Date:        time.Now(),
 		IsPublished: true,
+		PartnerId:   createdPartner.Id.Value,
 	})
 
 	createdEvent.AddSection(section_entity.SectionCreateProps{
@@ -68,7 +86,8 @@ func Setup() {
 		Date:               time.Now(),
 	})
 	createdEvent.PublishAll()
-	eventRepository.Add(createdEvent)
+	err := eventRepository.Add(createdEvent)
+	fmt.Println("erro aqui", err)
 	event = *createdEvent
 
 	section = event.Sections[0]
@@ -154,14 +173,12 @@ func TestShouldListOrders(t *testing.T) {
 	err := CreateOrder()
 	assert.Nil(t, err)
 
-	fmt.Println(event.Id.Value)
 	orders, _ := orderRepository.FindAll(event.Id.Value)
 	assert.Equal(t, 1, len(orders))
 	assert.Equal(t, spot.Id.Value, orders[0].EventSpotId.Value)
 	assert.Equal(t, customer.Id.Value, orders[0].CustomerId.Value)
 	assert.Equal(t, order_entity.OrderStatus.PAID, orders[0].Status)
 	assert.Equal(t, float64(100), orders[0].Amount)
-	fmt.Println(orders[0].EventSpotId.Value)
 
 	// orders, err = orderService.List("3e320fcd-e668-4cc5-8650-c33caea2bd56")
 	// assert.Nil(t, err)
